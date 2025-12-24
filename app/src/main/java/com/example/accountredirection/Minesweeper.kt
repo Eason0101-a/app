@@ -1,161 +1,157 @@
 package com.example.accountredirection
 
-import android.graphics.Color
 import android.os.Bundle
-import android.util.TypedValue
 import android.view.Gravity
-import android.widget.Button
 import android.widget.GridLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.accountredirection.databinding.MinesweeperMainBinding
 import kotlin.random.Random
-import android.content.Intent
 
 class Minesweeper : AppCompatActivity() {
-    // 遊戲主要元件
-    private lateinit var gridLayoutMinesweeper: GridLayout // 遊戲棋盤
-    private lateinit var tvStatus: TextView                // 顯示遊戲狀態
-    private lateinit var btnRestart: Button                // 重新開始按鈕
-    private lateinit var btn_Back: Button                  // 返回選單按鈕
 
-    // 遊戲參數
-    private val ROW_COUNT = 10   // 行數
-    private val COL_COUNT = 10   // 列數
-    private val MINE_COUNT = 15  // 地雷數量
+    private lateinit var binding: MinesweeperMainBinding
 
-    // 遊戲資料結構
-    private var cells = Array(ROW_COUNT) { arrayOfNulls<TextView>(COL_COUNT) } // 每個格子
-    private var isMine = Array(ROW_COUNT) { BooleanArray(COL_COUNT) }          // 是否有地雷
-    private var isRevealed = Array(ROW_COUNT) { BooleanArray(COL_COUNT) }      // 是否被翻開
-    private var isFlagged = Array(ROW_COUNT) { BooleanArray(COL_COUNT) }       // 是否被插旗
-    private var isGameOver = false                                             // 是否結束
+    private val ROW_COUNT = 10
+    private val COL_COUNT = 10
+    private val MINE_COUNT = 15
+
+    private val cells = Array(ROW_COUNT) { arrayOfNulls<TextView>(COL_COUNT) }
+    private var isMine = Array(ROW_COUNT) { BooleanArray(COL_COUNT) }
+    private var isRevealed = Array(ROW_COUNT) { BooleanArray(COL_COUNT) }
+    private var isFlagged = Array(ROW_COUNT) { BooleanArray(COL_COUNT) }
+    private var isGameOver = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.minesweeper_main)
+        binding = MinesweeperMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        // 防止 UI 被狀態列遮住
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_Minesweeper)) { v, insets ->
+        setupWindowInsets()
+        setupClickListeners()
+        resetGame()
+    }
+
+    private fun setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.mainMinesweeper) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
-        // 綁定元件
-        gridLayoutMinesweeper = findViewById(R.id.grid_layout_minesweeper)
-        tvStatus = findViewById(R.id.tv_status)
-        btnRestart = findViewById(R.id.btn_restart)
-        btn_Back = findViewById(R.id.btn_back)
-
-        // 重新開始按鈕
-        btnRestart.setOnClickListener {
-            resetGame()
-        }
-
-        // 返回選單
-        btn_Back.setOnClickListener {
-            val intent = Intent(this, ImageButtonGame::class.java)
-            startActivity(intent)
-            finish()
-        }
-
-        // 初始化遊戲
-        setupGame()
     }
 
-    /** 初始化遊戲棋盤 */
-    private fun setupGame() {
-        gridLayoutMinesweeper.removeAllViews()
-        gridLayoutMinesweeper.columnCount = COL_COUNT
-        gridLayoutMinesweeper.rowCount = ROW_COUNT
-        gridLayoutMinesweeper.setBackgroundColor(Color.BLACK) // 背景色當邊框
+    private fun setupClickListeners() {
+        binding.btnRestart.setOnClickListener { resetGame() }
+        binding.btnBack.setOnClickListener { finish() }
+    }
 
-        // 建立每個格子
-        for (i in 0 until ROW_COUNT) {
-            for (j in 0 until COL_COUNT) {
-                isMine[i][j] = false
-                isRevealed[i][j] = false
-                isFlagged[i][j] = false
-                cells[i][j] = createCell(i, j) // 建立一個格子
-                gridLayoutMinesweeper.addView(cells[i][j])
+    private fun resetGame() {
+        isGameOver = false
+        binding.tvStatus.text = getString(R.string.status_playing)
+        initializeGrid()
+        placeMines()
+    }
+
+    private fun initializeGrid() {
+        binding.gridLayoutMinesweeper.removeAllViews()
+        binding.gridLayoutMinesweeper.columnCount = COL_COUNT
+        binding.gridLayoutMinesweeper.rowCount = ROW_COUNT
+
+        for (row in 0 until ROW_COUNT) {
+            for (col in 0 until COL_COUNT) {
+                isMine[row][col] = false
+                isRevealed[row][col] = false
+                isFlagged[row][col] = false
+                val cell = createCell(row, col)
+                cells[row][col] = cell
+                binding.gridLayoutMinesweeper.addView(cell)
             }
         }
-
-        // 隨機放置地雷
-        placeMines()
-        tvStatus.text = "遊戲中..."
-        isGameOver = false
     }
 
-    /** 建立單一格子 */
     private fun createCell(row: Int, col: Int): TextView {
-        val cell = TextView(this).apply {
+        val cellHeight = resources.getDimensionPixelSize(R.dimen.mine_cell_height)
+        val cellMargin = resources.getDimensionPixelSize(R.dimen.mine_cell_margin)
+
+        return TextView(this).apply {
             layoutParams = GridLayout.LayoutParams().apply {
                 width = 0
-                height = TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP,
-                    40f, // 高度 40dp
-                    resources.displayMetrics
-                ).toInt()
+                height = cellHeight
                 columnSpec = GridLayout.spec(col, 1f)
                 rowSpec = GridLayout.spec(row, 1f)
-                setMargins(2, 2, 2, 2) // 2dp 邊框
+                setMargins(cellMargin, cellMargin, cellMargin, cellMargin)
             }
-            setBackgroundColor(Color.LTGRAY) // 初始背景
+            setBackgroundColor(ContextCompat.getColor(context, R.color.mine_cell_default))
             gravity = Gravity.CENTER
-            textSize = TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_SP,
-                18f,
-                resources.displayMetrics
-            )
+            textSize = resources.getDimension(R.dimen.mine_cell_text_size)
 
-            // 點擊事件（翻格子）
-            setOnClickListener {
-                if (!isGameOver && !isFlagged[row][col]) {
-                    onCellClick(row, col)
-                }
-            }
-
-            // 長按事件（插旗）
+            setOnClickListener { onCellClicked(row, col) }
             setOnLongClickListener {
-                if (!isGameOver && !isRevealed[row][col]) {
-                    toggleFlag(row, col)
-                }
+                toggleFlag(row, col)
                 true
             }
         }
-        return cell
     }
 
-    /** 隨機放置地雷 */
     private fun placeMines() {
         var minesPlaced = 0
         while (minesPlaced < MINE_COUNT) {
-            val randomRow = Random.nextInt(ROW_COUNT)
-            val randomCol = Random.nextInt(COL_COUNT)
-            if (!isMine[randomRow][randomCol]) {
-                isMine[randomRow][randomCol] = true
+            val r = Random.nextInt(ROW_COUNT)
+            val c = Random.nextInt(COL_COUNT)
+            if (!isMine[r][c]) {
+                isMine[r][c] = true
                 minesPlaced++
             }
         }
     }
 
-    /** 計算周圍地雷數 */
+    private fun onCellClicked(row: Int, col: Int) {
+        if (isGameOver || isRevealed[row][col] || isFlagged[row][col]) return
+
+        isRevealed[row][col] = true
+        cells[row][col]?.setBackgroundColor(ContextCompat.getColor(this, R.color.mine_cell_revealed))
+
+        if (isMine[row][col]) {
+            cells[row][col]?.text = getString(R.string.mine_emoji)
+            gameOver(false)
+        } else {
+            val adjacentMines = countAdjacentMines(row, col)
+            if (adjacentMines > 0) {
+                cells[row][col]?.apply {
+                    text = adjacentMines.toString()
+                    setTextColor(getNumberColor(adjacentMines))
+                }
+            } else {
+                revealEmptyCells(row, col) // Recursive reveal
+            }
+            checkWinCondition()
+        }
+    }
+
+    private fun toggleFlag(row: Int, col: Int) {
+        if (isGameOver || isRevealed[row][col]) return
+
+        isFlagged[row][col] = !isFlagged[row][col]
+        cells[row][col]?.apply {
+            if (isFlagged[row][col]) {
+                text = getString(R.string.flag_emoji)
+                setBackgroundColor(ContextCompat.getColor(context, R.color.flag_background))
+            } else {
+                text = ""
+                setBackgroundColor(ContextCompat.getColor(context, R.color.mine_cell_default))
+            }
+        }
+    }
+
     private fun countAdjacentMines(row: Int, col: Int): Int {
         var count = 0
-        for (i in -1..1) {
-            for (j in -1..1) {
-                val newRow = row + i
-                val newCol = col + j
-                if (newRow in 0 until ROW_COUNT &&
-                    newCol in 0 until COL_COUNT &&
-                    isMine[newRow][newCol]
-                ) {
+        for (r in (row - 1)..(row + 1)) {
+            for (c in (col - 1)..(col + 1)) {
+                if (r in 0 until ROW_COUNT && c in 0 until COL_COUNT && isMine[r][c]) {
                     count++
                 }
             }
@@ -163,137 +159,60 @@ class Minesweeper : AppCompatActivity() {
         return count
     }
 
-    /** 點擊格子 */
-    private fun onCellClick(row: Int, col: Int) {
-        if (isRevealed[row][col] || isFlagged[row][col]) return
-
-        isRevealed[row][col] = true
-        cells[row][col]?.setBackgroundColor(Color.WHITE)
-
-        if (isMine[row][col]) {
-            // 踩到地雷
-            cells[row][col]?.text = "💣"
-            cells[row][col]?.setBackgroundColor(Color.RED)
-            gameOver(false)
-        } else {
-            val mineCount = countAdjacentMines(row, col)
-            if (mineCount > 0) {
-                // 顯示數字
-                cells[row][col]?.text = mineCount.toString()
-                cells[row][col]?.setTextColor(getNumberColor(mineCount))
-            } else {
-                // 自動展開空白區域
-                revealEmptyCells(row, col)
-            }
-            checkWinCondition()
-        }
-    }
-
-    /** 插旗功能 */
-    private fun toggleFlag(row: Int, col: Int) {
-        if (isRevealed[row][col]) return
-        isFlagged[row][col] = !isFlagged[row][col]
-
-        if (isFlagged[row][col]) {
-            cells[row][col]?.text = "🚩"
-            cells[row][col]?.setBackgroundColor(Color.YELLOW)
-        } else {
-            cells[row][col]?.text = ""
-            cells[row][col]?.setBackgroundColor(Color.LTGRAY)
-        }
-    }
-
-    /** 自動展開空白區域 */
     private fun revealEmptyCells(row: Int, col: Int) {
-        for (i in -1..1) {
-            for (j in -1..1) {
-                val newRow = row + i
-                val newCol = col + j
-                if (newRow in 0 until ROW_COUNT &&
-                    newCol in 0 until COL_COUNT &&
-                    !isMine[newRow][newCol] &&
-                    !isRevealed[newRow][newCol]
-                ) {
-                    onCellClick(newRow, newCol)
+        for (r in (row - 1)..(row + 1)) {
+            for (c in (col - 1)..(col + 1)) {
+                if (r in 0 until ROW_COUNT && c in 0 until COL_COUNT && !isRevealed[r][c]) {
+                    onCellClicked(r, c) // This will handle all logic
                 }
             }
         }
     }
 
-    /** 數字顏色設定 */
-    private fun getNumberColor(count: Int): Int {
-        return when (count) {
-            1 -> Color.BLUE
-            2 -> Color.GREEN
-            3 -> Color.RED
-            4 -> Color.MAGENTA
-            5 -> Color.DKGRAY
-            6 -> Color.CYAN
-            7 -> Color.BLACK
-            8 -> Color.GRAY
-            else -> Color.BLACK
-        }
-    }
-
-    /** 勝利條件檢查 */
     private fun checkWinCondition() {
-        var revealedCount = 0
-        for (i in 0 until ROW_COUNT) {
-            for (j in 0 until COL_COUNT) {
-                if (isRevealed[i][j] && !isMine[i][j]) {
-                    revealedCount++
-                }
-            }
+        val nonMineCellsRevealed = (0 until ROW_COUNT).sumOf { r ->
+            (0 until COL_COUNT).count { c -> isRevealed[r][c] && !isMine[r][c] }
         }
-        if (revealedCount == (ROW_COUNT * COL_COUNT) - MINE_COUNT) {
+
+        if (nonMineCellsRevealed == (ROW_COUNT * COL_COUNT - MINE_COUNT)) {
             gameOver(true)
         }
     }
 
-    /** 遊戲結束（輸/贏） */
     private fun gameOver(isWin: Boolean) {
         isGameOver = true
-        if (isWin) {
-            tvStatus.text = "恭喜你，獲勝了！"
-            Toast.makeText(this, "恭喜你，獲勝了！", Toast.LENGTH_SHORT).show()
-            // 顯示所有地雷
-            for (i in 0 until ROW_COUNT) {
-                for (j in 0 until COL_COUNT) {
-                    if (isMine[i][j] && !isRevealed[i][j]) {
-                        cells[i][j]?.text = "💣"
-                        cells[i][j]?.setBackgroundColor(Color.GREEN)
-                    }
-                }
-            }
-        } else {
-            tvStatus.text = "遊戲結束，你踩到地雷了！"
-            Toast.makeText(this, "遊戲結束，你踩到地雷了！", Toast.LENGTH_SHORT).show()
-            // 顯示所有地雷與錯誤旗子
-            for (i in 0 until ROW_COUNT) {
-                for (j in 0 until COL_COUNT) {
-                    if (isMine[i][j]) {
-                        cells[i][j]?.text = "💣"
-                        cells[i][j]?.setBackgroundColor(Color.RED)
-                    } else if (isFlagged[i][j] && !isMine[i][j]) {
-                        cells[i][j]?.text = "❌"
-                        cells[i][j]?.setBackgroundColor(Color.MAGENTA)
+        val message = if (isWin) getString(R.string.status_win) else getString(R.string.status_lose)
+        binding.tvStatus.text = message
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+        // Reveal all mines
+        for (r in 0 until ROW_COUNT) {
+            for (c in 0 until COL_COUNT) {
+                cells[r][c]?.apply {
+                    if (isMine[r][c]) {
+                        text = getString(R.string.mine_emoji)
+                        setBackgroundColor(if (isWin) ContextCompat.getColor(context, R.color.mine_background_win) else ContextCompat.getColor(context, R.color.mine_background_lose))
+                    } else if (isFlagged[r][c] && !isMine[r][c]) {
+                        text = getString(R.string.wrong_flag_emoji)
+                        setBackgroundColor(ContextCompat.getColor(context, R.color.wrong_flag_background))
                     }
                 }
             }
         }
     }
 
-    /** 重置遊戲 */
-    private fun resetGame() {
-        for (i in 0 until ROW_COUNT) {
-            for (j in 0 until COL_COUNT) {
-                isMine[i][j] = false
-                isRevealed[i][j] = false
-                isFlagged[i][j] = false
-                cells[i][j]?.text = ""
-                cells[i][j]?.setBackgroundColor(Color.LTGRAY)
-            }
+    private fun getNumberColor(count: Int): Int {
+        val colorRes = when (count) {
+            1 -> R.color.mine_number_1
+            2 -> R.color.mine_number_2
+            3 -> R.color.mine_number_3
+            4 -> R.color.mine_number_4
+            5 -> R.color.mine_number_5
+            6 -> R.color.mine_number_6
+            7 -> R.color.mine_number_7
+            8 -> R.color.mine_number_8
+            else -> R.color.black
         }
-        setupGame()
+        return ContextCompat.getColor(this, colorRes)
     }
 }

@@ -1,40 +1,36 @@
 package com.example.accountredirection
 
-import android.content.Intent
 import android.os.Bundle
-import android.view.MotionEvent
-import android.widget.Button
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.accountredirection.databinding.SnakegameMainBinding
 
 class SnakeGameActivity : AppCompatActivity() {
-    private lateinit var gameView: SnakeGameView
-    private lateinit var scoreTextView: TextView
-    private lateinit var backButton: Button
+
+    private lateinit var binding: SnakegameMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.snakegame_main)
+        binding = SnakegameMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        gameView = findViewById(R.id.snakeGame2)
-        scoreTextView = findViewById(R.id.scoreTextView)
-        backButton = findViewById(R.id.button_back)
-
-        gameView.setScoreUpdateListener { score ->
-            scoreTextView.text = "Score: $score"
-        }
-
-        backButton.setOnClickListener {
-            startActivity(Intent(this, ImageButtonGame::class.java))
-            finish()
-        }
+        setupListeners()
     }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.action == MotionEvent.ACTION_DOWN) {
-            gameView.handleTouchEvent(event.x, event.y)
-            return true
+    private fun setupListeners() {
+        // Set the score update listener on the game view
+        binding.snakeGameView.setScoreUpdateListener { score ->
+            binding.scoreTextView.text = getString(R.string.snake_score_format, score)
         }
-        return super.onTouchEvent(event)
+
+        // Handle back button click
+        binding.buttonBack.setOnClickListener {
+            finish() // Correct way to navigate back
+        }
+
+        // Handle restart button click
+        binding.buttonRestart.setOnClickListener {
+            // Assuming SnakeGameView has a method to restart the game
+            binding.snakeGameView.restartGame()
+        }
     }
 }

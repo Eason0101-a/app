@@ -1,94 +1,68 @@
 package com.example.accountredirection
 
-import android.content.Intent
 import android.os.Bundle
-import android.widget.*
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.activity.enableEdgeToEdge
+import com.example.accountredirection.databinding.TemperatureconversionMainBinding
 
 class Temperature_Conversion : AppCompatActivity() {
 
-    private lateinit var temperatureInput: EditText
-    private lateinit var conversionSwitch: Switch
-    private lateinit var switchStatusLabel: TextView
-    private lateinit var convertButton: Button
-    private lateinit var resultTextView: TextView
-    private lateinit var backButton: Button
+    private lateinit var binding: TemperatureconversionMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.temperatureconversion_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_temperatureconversion)) { v, insets ->
+        binding = TemperatureconversionMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        setupWindowInsets()
+        setupClickListeners()
+    }
+
+    private fun setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.mainTemperatureconversion) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
 
-        temperatureInput = findViewById(R.id.TemperatureInput)
-        conversionSwitch = findViewById(R.id.conversionSwitch)
-        switchStatusLabel = findViewById(R.id.switchStatusLabel)
-        convertButton = findViewById(R.id.button_Conversion)
-        resultTextView = findViewById(R.id.resultTextView)
-        backButton = findViewById(R.id.backButton)
-
-        resultTextView.text = "請輸入溫度"
-        updateSwitchLabel()
-
-        convertButton.setOnClickListener {
-            performConversion()
+    private fun setupClickListeners() {
+        binding.buttonConversion.setOnClickListener {
+            convertTemperature()
         }
 
-        // 切換Switch只更新標籤，不馬上轉換，避免用戶誤觸
-        conversionSwitch.setOnCheckedChangeListener { _, _ ->
-            updateSwitchLabel()
-        }
-
-        backButton.setOnClickListener {
-            val intent = Intent(this, ImageButtonGame::class.java)
-            startActivity(intent)
+        binding.backButton.setOnClickListener {
             finish()
         }
     }
 
-    private fun updateSwitchLabel() {
-        switchStatusLabel.text = if (conversionSwitch.isChecked) {
-            "目前為：華氏轉攝氏"
-        } else {
-            "目前為：攝氏轉華氏"
+    private fun convertTemperature() {
+        val inputText = binding.TemperatureInput.text.toString()
+        if (inputText.isEmpty()) {
+            Toast.makeText(this, R.string.error_invalid_input, Toast.LENGTH_SHORT).show()
+            return
         }
-    }
 
-    private fun performConversion() {
-        val temperatureText = temperatureInput.text.toString()
-        if (temperatureText.isNotEmpty()) {
-            try {
-                val temperature = temperatureText.toDouble()
-                val isFahrenheitToCelsius = conversionSwitch.isChecked
-
-                val result = if (isFahrenheitToCelsius) {
-                    fahrenheitToCelsius(temperature)
-                } else {
-                    celsiusToFahrenheit(temperature)
-                }
-
-                val unit = if (isFahrenheitToCelsius) "°C" else "°F"
-                resultTextView.text = String.format("%.2f %s", result, unit)
-            } catch (e: NumberFormatException) {
-                resultTextView.text = "格式錯誤，請輸入數字"
-            }
-        } else {
-            resultTextView.text = "請輸入溫度"
+        val inputTemp = inputText.toDoubleOrNull()
+        if (inputTemp == null) {
+            Toast.makeText(this, R.string.error_invalid_input, Toast.LENGTH_SHORT).show()
+            return
         }
-    }
 
-    private fun celsiusToFahrenheit(celsius: Double): Double {
-        return (celsius * 9 / 5) + 32
-    }
+        val isCelsiusToFahrenheit = binding.radioCToF.isChecked
+        val result: Double
+        val resultUnit: String
 
-    private fun fahrenheitToCelsius(fahrenheit: Double): Double {
-        return (fahrenheit - 32) * 5 / 9
+        if (isCelsiusToFahrenheit) {
+            result = (inputTemp * 9 / 5) + 32
+            resultUnit = "°F"
+        } else {
+            result = (inputTemp - 32) * 5 / 9
+            resultUnit = "°C"
+        }
+
+        binding.resultTextView.text = getString(R.string.conversion_result_format, result, resultUnit)
     }
 }

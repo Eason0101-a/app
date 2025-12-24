@@ -1,170 +1,172 @@
 package com.example.accountredirection
 
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
-import android.widget.Button
 import android.widget.EditText
-import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.accountredirection.databinding.GuessNumberMainBinding
 import kotlin.random.Random
-import android.content.Intent
 
-// 猜數字遊戲 Activity
+// A data class to hold the state of the game.
+// A default value for attemptsLeft is crucial for robust initialization.
+data class GameState(
+    val secretNumber: Int = Random.nextInt(1, 101),
+    var minRange: Int = 1,
+    var maxRange: Int = 100,
+    var attemptsLeft: Int = 5,
+    var isGameActive: Boolean = true
+)
+
 class GuessNumber : AppCompatActivity() {
-    // 宣告 UI 元件
-    private lateinit var resultTextView: TextView     // 顯示結果 (太大/太小/答對)
-    private lateinit var rangeTextView: TextView      // 顯示範圍
-    private lateinit var attemptsTextView: TextView   // 顯示剩餘次數
-    private lateinit var guessEditText: EditText      // 玩家輸入的數字
-    private lateinit var guessButton: Button          // 猜測按鈕
-    private lateinit var restartButton: Button        // 重新開始按鈕
-    private lateinit var revealButton: Button         // 顯示答案按鈕
-    private lateinit var Return_button: Button        // 返回主畫面按鈕
 
-    // 遊戲相關變數
-    private var randomNumber: Int = 0   // 隨機產生的答案
-    private var minRange: Int = 1       // 最小範圍
-    private var maxRange: Int = 100     // 最大範圍
-    private var attemptsLeft: Int = 5   // 預設猜謎次數
+    private lateinit var binding: GuessNumberMainBinding
+    // The game state is now initialized immediately, removing the fragile `lateinit`
+    // and preventing crashes before the user interacts with the dialog.
+    private var gameState: GameState = GameState()
+    private val TAG = "GuessNumber"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.guess_number_main)
+        binding = GuessNumberMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        // 設定畫面避免被系統狀態列或導覽列遮到
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_GuessNumber)) { v, insets ->
+        Log.d(TAG, "Activity created. Initializing...")
+
+        setupWindowInsets()
+        setupClickListeners()
+
+        // Display initial state and then prompt for changes.
+        updateUI()
+        promptForAttemptsAndStartGame()
+    }
+
+    private fun setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.mainGuessNumber) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
 
-        // 綁定畫面元件
-        resultTextView = findViewById(R.id.Whether)
-        rangeTextView = findViewById(R.id.Interval)
-        guessEditText = findViewById(R.id.NumberInput)
-        guessButton = findViewById(R.id.button_Guess)
-        attemptsTextView = findViewById(R.id.Frequency)
-        restartButton = findViewById(R.id.Recreate)
-        revealButton = findViewById(R.id.Answer)
-        Return_button = findViewById(R.id.Return_button)
+    private fun setupClickListeners() {
+        binding.buttonGuess.setOnClickListener { 
+            Log.d(TAG, "Guess button clicked.")
+            handleGuess() 
+        }
+        binding.recreate.setOnClickListener { 
+            Log.d(TAG, "Recreate button clicked.")
+            promptForAttemptsAndStartGame() 
+        }
+        binding.answer.setOnClickListener { 
+            Log.d(TAG, "Answer button clicked.")
+            revealAnswer() 
+        }
+        binding.returnButton.setOnClickListener { 
+            Log.d(TAG, "Return button clicked.")
+            finish() 
+        }
+    }
 
-        // 返回主畫面
-        Return_button.setOnClickListener {
-            val intent = Intent(this, ImageButtonGame::class.java)
-            startActivity(intent)
+    private fun startGame(totalAttempts: Int) {
+        Log.d(TAG, "Starting new game with $totalAttempts attempts.")
+        gameState = GameState(attemptsLeft = totalAttempts)
+        binding.whether.text = getString(R.string.guess_number_start)
+        updateUI()
+    }
+
+    private fun handleGuess() {
+        val guessText = binding.numberInput.text.toString()
+        Log.d(TAG, "Handling guess: '$guessText'")
+
+        if (!gameState.isGameActive) {
+            showToast(R.string.guess_number_game_over)
+            return
         }
 
-        showAttemptsDialog() // 啟動時先讓玩家設定猜謎次數
-        startGame()          // 初始化遊戲
+        val guess = guessText.toIntOrNull()
 
-        // 猜數字按鈕事件
-        guessButton.setOnClickListener {
-            val guessText = guessEditText.text.toString()
-            if (guessText.isNotEmpty()) {
-                val guess = guessText.toIntOrNull()
-                if (guess != null && guess in minRange..maxRange) {
-                    attemptsLeft-- // 減少一次機會
-                    updateAttemptsTextView()
-                    checkGuess(guess) // 判斷大小
-                    guessEditText.text.clear()
+        if (guess == null || guess !in gameState.minRange..gameState.maxRange) {
+            showToast(getString(R.string.guess_number_invalid_input, gameState.minRange, gameState.maxRange))
+            return
+        }
 
-                    // 如果用完次數而且還沒答對
-                    if (attemptsLeft == 0 && !resultTextView.text.contains("恭喜")) {
-                        resultTextView.text = "次數用完！答案是 $randomNumber"
-                        guessButton.isEnabled = false
-                        guessEditText.isEnabled = false
-                    }
-                } else {
-                    Toast.makeText(this, "請輸入 $minRange 到 $maxRange 之間的數字", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                Toast.makeText(this, "請輸入數字", Toast.LENGTH_SHORT).show()
+        gameState.attemptsLeft--
+
+        when {
+            guess < gameState.secretNumber -> {
+                binding.whether.text = getString(R.string.guess_number_too_low)
+                gameState.minRange = maxOf(gameState.minRange, guess + 1)
+            }
+            guess > gameState.secretNumber -> {
+                binding.whether.text = getString(R.string.guess_number_too_high)
+                gameState.maxRange = minOf(gameState.maxRange, guess - 1)
+            }
+            else -> {
+                binding.whether.text = getString(R.string.guess_number_correct, gameState.secretNumber)
+                gameState.isGameActive = false
             }
         }
 
-        // 重新開始遊戲
-        restartButton.setOnClickListener {
-            showAttemptsDialog()
+        if (gameState.attemptsLeft == 0 && gameState.isGameActive) {
+            binding.whether.text = getString(R.string.guess_number_no_attempts, gameState.secretNumber)
+            gameState.isGameActive = false
         }
 
-        // 公布答案
-        revealButton.setOnClickListener {
-            resultTextView.text = "答案是 $randomNumber"
-            guessButton.isEnabled = false
-            guessEditText.isEnabled = false
-        }
+        binding.numberInput.text?.clear()
+        updateUI()
     }
 
-    // 初始化遊戲 (可指定猜謎次數)
-    private fun startGame(customAttempts: Int = 5) {
-        randomNumber = Random.nextInt(1, 101) // 產生 1~100 的隨機數字
-        minRange = 1
-        maxRange = 100
-        attemptsLeft = customAttempts
-        updateRangeTextView()
-        updateAttemptsTextView()
-        resultTextView.text = "開始猜數字吧！"
-        guessButton.isEnabled = true
-        guessEditText.isEnabled = true
+    private fun revealAnswer() {
+        Log.d(TAG, "Revealing answer.")
+        gameState.isGameActive = false
+        binding.whether.text = getString(R.string.guess_number_answer_is, gameState.secretNumber)
+        updateUI()
     }
 
-    // 更新範圍顯示
-    private fun updateRangeTextView() {
-        rangeTextView.text = "範圍：$minRange ~ $maxRange"
+    private fun updateUI() {
+        Log.d(TAG, "Updating UI. Attempts left: ${gameState.attemptsLeft}")
+        binding.interval.text = getString(R.string.guess_number_range, gameState.minRange, gameState.maxRange)
+        binding.frequency.text = getString(R.string.guess_number_attempts, gameState.attemptsLeft)
+        binding.buttonGuess.isEnabled = gameState.isGameActive
+        binding.numberInput.isEnabled = gameState.isGameActive
     }
 
-    // 更新剩餘次數顯示
-    private fun updateAttemptsTextView() {
-        attemptsTextView.text = "剩餘次數：$attemptsLeft"
-    }
-
-    // 顯示輸入猜謎次數的對話框
-    private fun showAttemptsDialog() {
+    private fun promptForAttemptsAndStartGame() {
+        Log.d(TAG, "Prompting for attempts.")
         val inputEditText = EditText(this).apply {
-            hint = "請輸入猜謎次數"
+            hint = getString(R.string.guess_number_dialog_hint)
             inputType = android.text.InputType.TYPE_CLASS_NUMBER
             gravity = Gravity.CENTER
         }
 
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("設定猜謎次數")
-            .setMessage("請輸入你想要的猜謎次數：")
+        AlertDialog.Builder(this)
+            .setTitle(R.string.guess_number_dialog_title)
+            .setMessage(R.string.guess_number_dialog_message)
             .setView(inputEditText)
-            .setPositiveButton("確定") { _, _ ->
+            .setPositiveButton(R.string.guess_number_dialog_confirm) { _, _ ->
                 val userInput = inputEditText.text.toString()
-                val newAttempts = userInput.toIntOrNull()
-                if (newAttempts != null && newAttempts > 0) {
-                    startGame(newAttempts) // 用玩家輸入的次數重新開始遊戲
-                    Toast.makeText(this, "已設定猜謎次數為 $newAttempts 次", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "請輸入有效的正整數", Toast.LENGTH_SHORT).show()
-                    showAttemptsDialog() // 如果輸入不正確，重新叫出對話框
-                }
+                val newAttempts = userInput.toIntOrNull()?.takeIf { it > 0 } ?: 5
+                startGame(newAttempts)
+                showToast(getString(R.string.guess_number_toast_attempts_set, newAttempts))
             }
-            .setCancelable(false) // 不允許點外面取消
-            .create()
-
-        dialog.show()
+            .setNegativeButton(R.string.guess_number_dialog_default) { _, _ ->
+                startGame(5)
+                showToast(getString(R.string.guess_number_toast_attempts_set, 5))
+            }
+            .setCancelable(false)
+            .show()
     }
 
-    // 檢查玩家的猜測
-    private fun checkGuess(guess: Int) {
-        if (guess < randomNumber) {
-            resultTextView.text = "太小了！"
-            minRange = maxOf(minRange, guess) // 更新最小範圍
-        } else if (guess > randomNumber) {
-            resultTextView.text = "太大了！"
-            maxRange = minOf(maxRange, guess) // 更新最大範圍
-        } else {
-            resultTextView.text = "恭喜你猜對了！答案是 $randomNumber"
-            guessButton.isEnabled = false
-            guessEditText.isEnabled = false
-        }
-        updateRangeTextView()
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showToast(stringResId: Int) {
+        Toast.makeText(this, getString(stringResId), Toast.LENGTH_SHORT).show()
     }
 }

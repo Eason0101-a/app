@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.graphics.withSave
 import kotlin.random.Random
 
 // 自訂驗證碼的 View (繼承自 View)
@@ -16,89 +17,95 @@ class CaptchaCustomView @JvmOverloads constructor(
     defStyleAttr: Int = 0        // 預設樣式
 ) : View(context, attrs, defStyleAttr) {
 
-    // 繪製文字的畫筆
+    // --- 屬性 ---
+
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = 70f     // 字體大小
         strokeWidth = 3f   // 筆畫粗細
     }
 
-    // 繪製干擾線的畫筆
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.GRAY
         strokeWidth = 5f
     }
 
-    // 驗證碼文字
     private var captchaText: String = ""
-    // 每個字母對應的顏色
     private val charColors = mutableListOf<Int>()
 
-    // 設定驗證碼文字，並為每個字母隨機分配顏色
+    // --- View 生命週期 ---
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+
+        if (captchaText.isEmpty() || width == 0 || height == 0) {
+            return
+        }
+
+        drawCaptchaText(canvas)
+        drawInterferenceLines(canvas)
+    }
+
+    // --- 公開 API ---
+
     fun setCaptchaText(text: String) {
         captchaText = text
         charColors.clear()
         for (i in text.indices) {
-            charColors.add(generateRandomColor()) // 產生隨機顏色
+            charColors.add(generateRandomColor())
         }
-        invalidate() // 重新繪製畫面
+        invalidate() // 觸發 onDraw
     }
 
-    // 產生隨機顏色 (R/G/B 在 0~200 之間，避免太亮或太暗)
-    private fun generateRandomColor(): Int {
-        val red = Random.nextInt(200)
-        val green = Random.nextInt(200)
-        val blue = Random.nextInt(200)
-        return Color.rgb(red, green, blue)
-    }
+    // --- 私有輔助方法 ---
 
-    // 繪製內容
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-
-        // 如果沒有驗證碼字串，直接跳出
-        if (captchaText.isEmpty()) {
-            return
+    private fun drawCaptchaText(canvas: Canvas) {
+        // Pre-calculate widths for each character
+        val charWidths = captchaText.map { textPaint.measureText(it.toString()) }
+        
+        // Create N-1 random spacings for N characters
+        val spacings = if (captchaText.length > 1) {
+            List(captchaText.length - 1) { Random.nextFloat() * 10 }
+        } else {
+            emptyList()
         }
 
-        // 計算每個字母的寬度
-        val charWidth = textPaint.measureText("W")
-        // 計算整段驗證碼的總寬度
-        val totalTextWidth = textPaint.measureText(captchaText)
-        // 計算起始 X (讓文字水平置中)
+        val totalTextWidth = charWidths.sum() + spacings.sum()
         val startX = (width - totalTextWidth) / 2f
-
         var currentX = startX
-        // 一個一個字母繪製
+
         for (i in captchaText.indices) {
             val char = captchaText[i]
+            val charString = char.toString()
+            val charWidth = charWidths[i]
             val charColor = charColors.getOrElse(i) { generateRandomColor() }
 
-            canvas.save() // 儲存當前畫布狀態
+            canvas.withSave {
+                // 隨機旋轉
+                val rotation = Random.nextFloat() * 20 - 10
+                rotate(rotation, currentX + charWidth / 2, height / 2f)
 
-            // 隨機旋轉 (-10° ~ +10°)
-            val rotation = Random.nextFloat() * 20 - 10
-            canvas.rotate(rotation, currentX + charWidth / 2, height / 2f)
+                // 隨機垂直偏移
+                val offsetY = Random.nextFloat() * 20 - 10
+                translate(0f, offsetY)
 
-            // 隨機垂直偏移 (-10 ~ +10)
-            val offsetY = Random.nextFloat() * 20 - 10
-            canvas.translate(0f, offsetY)
-
-            // 設定字體顏色並繪製文字
-            textPaint.color = charColor
-            canvas.drawText(
-                char.toString(),
-                currentX,
-                height / 2f + textPaint.textSize / 3, // 調整 Y 讓字母置中
-                textPaint
-            )
-
-            canvas.restore() // 還原畫布狀態
-
-            // 移動到下一個字母位置 (並隨機加入一點空隙)
-            currentX += charWidth + Random.nextFloat() * 10
+                // 繪製文字
+                textPaint.color = charColor
+                drawText(
+                    charString,
+                    currentX,
+                    height / 2f + textPaint.textSize / 3,
+                    textPaint
+                )
+            }
+            
+            currentX += charWidth
+            if (i < spacings.size) {
+                currentX += spacings[i]
+            }
         }
+    }
 
-        // 隨機畫 2~3 條干擾線
+    private fun drawInterferenceLines(canvas: Canvas) {
         val numLines = Random.nextInt(2, 4)
         for (i in 0 until numLines) {
             linePaint.color = generateRandomColor()
@@ -108,5 +115,12 @@ class CaptchaCustomView @JvmOverloads constructor(
             val endLineY = Random.nextFloat() * height
             canvas.drawLine(startLineX, startLineY, endLineX, endLineY, linePaint)
         }
+    }
+
+    private fun generateRandomColor(): Int {
+        val red = Random.nextInt(200)
+        val green = Random.nextInt(200)
+        val blue = Random.nextInt(200)
+        return Color.rgb(red, green, blue)
     }
 }

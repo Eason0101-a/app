@@ -1,15 +1,14 @@
 package com.example.accountredirection
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Paint
 import android.os.Handler
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.core.content.ContextCompat
 import java.util.*
-import kotlin.collections.LinkedHashSet
 import kotlin.math.abs
 
 class SnakeGameView(context: Context, attrs: AttributeSet?) : SurfaceView(context, attrs), SurfaceHolder.Callback {
@@ -31,12 +30,17 @@ class SnakeGameView(context: Context, attrs: AttributeSet?) : SurfaceView(contex
 
     init {
         holder.addCallback(this)
-        paint.color = Color.GREEN
+        paint.color = ContextCompat.getColor(context, R.color.snake_color)
         snake.add(Pair(5, 10))
     }
 
     fun setScoreUpdateListener(listener: (Int) -> Unit) {
         scoreUpdateListener = listener
+    }
+
+    fun restartGame() {
+        stopGame()
+        startGame()
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -113,9 +117,9 @@ class SnakeGameView(context: Context, attrs: AttributeSet?) : SurfaceView(contex
 
     private fun drawGame() {
         val canvas = holder.lockCanvas() ?: return
-        canvas.drawColor(Color.BLACK)
+        canvas.drawColor(ContextCompat.getColor(context, R.color.game_background))
 
-        paint.color = Color.RED
+        paint.color = ContextCompat.getColor(context, R.color.food_color)
         canvas.drawRect(
             food.first * gridSize.toFloat(),
             food.second * gridSize.toFloat(),
@@ -124,7 +128,7 @@ class SnakeGameView(context: Context, attrs: AttributeSet?) : SurfaceView(contex
             paint
         )
 
-        paint.color = Color.GREEN
+        paint.color = ContextCompat.getColor(context, R.color.snake_color)
         for (segment in snake) {
             canvas.drawRect(
                 segment.first * gridSize.toFloat(),
@@ -166,10 +170,6 @@ class SnakeGameView(context: Context, attrs: AttributeSet?) : SurfaceView(contex
                 else if (deltaY < 0 && direction != Direction.DOWN) direction = Direction.UP
             }
         }
-    }
-
-    fun handleTouchEvent(x: Float, y: Float) {
-        // 預留未來觸控功能
     }
 }
 

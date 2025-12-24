@@ -2,4 +2,27 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Snake Game Colors -->
+    <color name="snake_color">#FF00FF00</color>
+    <color name="food_color">#FFFF0000</color>
+    <color name="game_background">#FF000000</color>
+
+    <!-- Minesweeper Colors -->
+    <color name="mine_grid_background">#FF000000</color>
+    <color name="mine_cell_default">#FFCCCCCC</color>
+    <color name="mine_cell_revealed">#FFFFFFFF</color>
+    <color name="mine_background_lose">#FFFF0000</color>
+    <color name="mine_background_win">#FF00FF00</color>
+    <color name="flag_background">#FFFFFF00</color>
+    <color name="wrong_flag_background">#FFFF00FF</color>
+
+    <color name="mine_number_1">#FF0000FF</color>
+    <color name="mine_number_2">#FF008000</color>
+    <color name="mine_number_3">#FFFF0000</color>
+    <color name="mine_number_4">#FF800080</color>
+    <color name="mine_number_5">#FF696969</color>
+    <color name="mine_number_6">#FF00FFFF</color>
+    <color name="mine_number_7">#FF000000</color>
+    <color name="mine_number_8">#FF808080</color>
 </resources>

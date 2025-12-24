@@ -1,3 +1,105 @@
 <resources>
     <string name="app_name">AccountRedirection</string>
+
+    <!-- General -->
+    <string name="action_back">返回</string>
+    <string name="action_restart">重新開始</string>
+
+    <!-- Main Activity -->
+    <string name="login_title">會員登入</string>
+    <string name="hint_account">請輸入帳號</string>
+    <string name="hint_password">請輸入密碼</string>
+    <string name="hint_captcha">驗證碼</string>
+    <string name="action_login">登入</string>
+    <string name="login_success">登入成功！</string>
+    <string name="login_failed">帳號或密碼錯誤</string>
+    <string name="captcha_error">驗證碼錯誤，請重新輸入。</string>
+    <string name="fill_all_fields">請填寫所有欄位</string>
+    <string name="logout_prompt">返回登入頁面</string>
+
+    <!-- Game Menu -->
+    <string name="game_menu_title">遊戲選單</string>
+    <string name="game_guess_number">猜數字</string>
+    <string name="game_bmi">BMI 計算</string>
+    <string name="game_snake">貪吃蛇</string>
+    <string name="game_minesweeper">踩地雷</string>
+    <string name="game_temp_converter">溫度轉換</string>
+    <string name="game_tictactoe">圈圈叉叉</string>
+
+    <!-- Guess Number -->
+    <string name="guess_number_start">開始猜數字吧！</string>
+    <string name="guess_number_range">範圍：%1$d ~ %2$d</string>
+    <string name="guess_number_attempts">剩餘次數：%d</string>
+    <string name="guess_number_hint">請在此輸入數字</string>
+    <string name="guess_number_action_guess">猜！</string>
+    <string name="guess_number_action_reveal">看答案</string>
+    <string name="guess_number_game_over">遊戲已結束，請重新開始</string>
+    <string name="guess_number_invalid_input">請輸入 %1$d 到 %2$d 之間的有效數字</string>
+    <string name="guess_number_too_low">太小了！</string>
+    <string name="guess_number_too_high">太大了！</string>
+    <string name="guess_number_correct">恭喜你猜對了！答案是 %d</string>
+    <string name="guess_number_no_attempts">次數用完！答案是 %d</string>
+    <string name="guess_number_answer_is">答案是 %d</string>
+    <string name="guess_number_dialog_title">設定猜謎次數</string>
+    <string name="guess_number_dialog_message">請輸入你想要的猜謎次數：</string>
+    <string name="guess_number_dialog_hint">預設 5 次</string>
+    <string name="guess_number_dialog_confirm">確定</string>
+    <string name="guess_number_dialog_default">使用預設</string>
+    <string name="guess_number_toast_attempts_set">遊戲開始！您有 %d 次機會</string>
+    <string name="guess_number_toast_invalid_attempts">請輸入有效的正整數</string>
+
+    <!-- Snake Game -->
+    <string name="snake_score_format">分數: %d</string>
+
+    <!-- Temperature Converter -->
+    <string name="temp_converter_title">溫度轉換器</string>
+    <string name="hint_temperature">請輸入溫度值</string>
+    <string name="celsius_to_fahrenheit">攝氏 (°C) 轉 華氏 (°F)</string>
+    <string name="fahrenheit_to_celsius">華氏 (°F) 轉 攝氏 (°C)</string>
+    <string name="action_convert">轉換</string>
+    <string name="conversion_result_label">轉換結果</string>
+    <string name="conversion_result_format">%.2f %s</string>
+    <string name="error_invalid_input">請輸入有效的溫度</string>
+
+    <!-- Minesweeper -->
+    <string name="minesweeper_title">踩地雷</string>
+    <string name="status_playing">遊戲中...</string>
+    <string name="status_win">恭喜你，獲勝了！</string>
+    <string name="status_lose">遊戲結束，你踩到地雷了！</string>
+    <string name="mine_emoji">💣</string>
+    <string name="flag_emoji">🚩</string>
+    <string name="wrong_flag_emoji">❌</string>
+
+    <!-- Tic Tac Toe -->
+    <string name="tictactoe_title">井字棋</string>
+    <string name="turn_x">輪到 X</string>
+    <string name="turn_o">輪到 O</string>
+    <string name="winner_x">X 勝利！</string>
+    <string name="winner_o">O 勝利！</string>
+    <string name="draw">平手！</string>
+
+    <!-- BMI Calculator -->
+    <string name="bmi_title">BMI 計算器</string>
+    <string name="bmi_result_label">您的 BMI 值是</string>
+    <string name="bmi_result_format">你的 BMI 是 %1$.2f (%2$s)</string>
+    <string name="bmi_category_underweight">過輕</string>
+    <string name="bmi_category_normal">正常</string>
+    <string name="bmi_category_overweight">過重</string>
+    <string name="bmi_category_obese">肥胖</string>
+    <string name="error_incomplete_data">請輸入完整資料</string>
+    <string name="hint_height_cm">身高 (公分)</string>
+    <string name="hint_weight_kg">體重 (公斤)</string>
+    <string name="action_calculate_bmi">計算 BMI</string>
+
+    <!-- Accessibility -->
+    <string name="cell_top_left">左上角</string>
+    <string name="cell_top_center">中上</string>
+    <string name="cell_top_right">右上角</string>
+    <string name="cell_middle_left">中左</string>
+    <string name="cell_middle_center">中間</string>
+    <string name="cell_middle_right">中右</string>
+    <string name="cell_bottom_left">左下角</string>
+    <string name="cell_bottom_center">中下</string>
+    <string name="cell_bottom_right">右下角</string>
+
 </resources>

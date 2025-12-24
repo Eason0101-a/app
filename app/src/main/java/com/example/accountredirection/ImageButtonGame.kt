@@ -1,76 +1,58 @@
 package com.example.accountredirection
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.ImageButton // 保持這個導入，因為現在 btnBack 也是 ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import android.widget.Button // 如果不再使用普通的 Button，可以移除這個導入
+import com.example.accountredirection.databinding.ButtonGameMainBinding
+import kotlin.reflect.KClass
 
 class ImageButtonGame : AppCompatActivity() {
+
+    private lateinit var binding: ButtonGameMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.button_game_main)
+        binding = ButtonGameMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        // 初始化所有 ImageButton
-        val imageButton1: ImageButton = findViewById(R.id.imageButton1)
-        val imageButton2: ImageButton = findViewById(R.id.imageButton2)
-        val imageButton3: ImageButton = findViewById(R.id.imageButton3)
-        val imageButton4: ImageButton = findViewById(R.id.imageButton4)
-        val imageButton5: ImageButton = findViewById(R.id.imageButton5)
-        val imageButton6: ImageButton = findViewById(R.id.imageButton6)
+        setupGameButtons()
+        setupBackButton()
+    }
 
-        val btnBack: Button = findViewById(R.id.btnBack)
+    private fun setupGameButtons() {
+        val gameButtons = mapOf(
+            binding.imageButton1 to Pair(GuessNumber::class, R.string.game_guess_number),
+            binding.imageButton2 to Pair(BMI_KT::class, R.string.game_bmi),
+            binding.imageButton3 to Pair(SnakeGameActivity::class, R.string.game_snake),
+            binding.imageButton4 to Pair(Minesweeper::class, R.string.game_minesweeper),
+            binding.imageButton5 to Pair(Temperature_Conversion::class, R.string.game_temp_converter),
+            binding.imageButton6 to Pair(TicTacToeActivity::class, R.string.game_tictactoe) // Corrected class reference
+        )
 
-        // 設定每個按鈕的點擊事件監聽器
-        imageButton1.setOnClickListener {
-            val intent = Intent(this, GuessNumber::class.java)
-            startActivity(intent)
-            showToast("猜數字")
-        }
-
-        imageButton2.setOnClickListener {
-            val intent = Intent(this,BMI_KT::class.java)
-            startActivity(intent)
-            showToast("BMI")
-        }
-
-        imageButton3.setOnClickListener {
-            val intent = Intent(this, SnakeGameActivity::class.java)
-            startActivity(intent)
-            showToast("貪吃蛇")
-        }
-
-        imageButton4.setOnClickListener {
-            val intent = Intent(this, Minesweeper::class.java)
-            startActivity(intent)
-            showToast("採地雷")
-        }
-
-        imageButton5.setOnClickListener {
-            val intent = Intent(this, Temperature_Conversion::class.java)
-            startActivity(intent)
-            showToast("溫度轉換")
-        }
-
-        imageButton6.setOnClickListener {
-            val intent = Intent(this, TicTacToeActivity::class.java)
-            startActivity(intent)
-            showToast("圈圈叉叉")
-        }
-
-
-
-
-        // 設定返回按鈕的點擊事件監聽器
-        btnBack.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            showToast("返回登入頁面")
+        gameButtons.forEach { (button, pair) ->
+            val (activityClass, stringResId) = pair
+            button.setOnClickListener {
+                launchActivity(activityClass, stringResId)
+            }
         }
     }
-    // 輔助函數：顯示 Toast 訊息
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+    private fun setupBackButton() {
+        binding.btnBack.setOnClickListener {
+            showToast(R.string.logout_prompt)
+            finish() // Correct way to go back
+        }
+    }
+
+    private fun launchActivity(activityClass: KClass<out Activity>, toastResId: Int) {
+        val intent = Intent(this, activityClass.java)
+        startActivity(intent)
+        showToast(toastResId)
+    }
+
+    private fun showToast(stringResId: Int) {
+        Toast.makeText(this, getString(stringResId), Toast.LENGTH_SHORT).show()
     }
 }
